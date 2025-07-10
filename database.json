@@ -1,0 +1,37 @@
+{
+  "123456789": {
+    "nombre": "Maximiliano",
+    "apellido": "Saldivia",
+    "nacionalidad": "Chilena",
+    "sexo": "Masculino",
+    "fecha_nacimiento": "02/02/2003",
+    "user_roblox": {
+      "Id": 12345678,
+      "Username": "i14_maxiii"
+    }
+  },
+  "1287785543689834619": {
+    "primeraCedula": {
+      "nombre": "Maximiliano",
+      "apellido": "Saldivia",
+      "nacionalidad": "Chilena",
+      "sexo": "Masculino",
+      "fecha_nacimiento": "02/02/2003",
+      "roblox": {
+        "Id": 1562009777,
+        "Username": "i14_maxiii"
+      }
+    },
+    "segundaCedula": {
+      "nombre": "Valente Ignacio",
+      "apellido": "Saldivia Perez",
+      "nacionalidad": "Argentina",
+      "sexo": "Masculino",
+      "fecha_nacimiento": "04/08/1990",
+      "roblox": {
+        "Id": 1562009777,
+        "Username": "i14_maxiii"
+      }
+    }
+  }
+}
