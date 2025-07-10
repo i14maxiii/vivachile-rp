@@ -1,9 +1,21 @@
+require('dotenv').config(); // carga las variables de .env automáticamente
+
+const token = process.env.DISCORD_TOKEN;
+const clientId = process.env.CLIENT_ID;
+const guildId = process.env.GUILD_ID;
+
+console.log("Token:", token ? "Cargado" : "No definido");
+console.log("Client ID:", clientId ? "Cargado" : "No definido");
+console.log("Guild ID:", guildId ? "Cargado" : "No definido");
+
+// Aquí sigue tu código usando esas variables
+
 const { Client, GatewayIntentBits, Events } = require("discord.js");
 const fs = require("fs");
 const path = require("path");
 const fetch = require("node-fetch");
-const config = require("./config.json");
 
+// Roles para permisos
 const ROLE_ID_ALLOWED = "1392898072132059187"; // permiso para eliminar cédulas
 const ROLE_ID_SECOND_DNI = "1392915676682911834"; // permiso para crear segunda cédula
 
@@ -29,6 +41,21 @@ function writeDB(data) {
   fs.writeFileSync(dbPath, JSON.stringify(data, null, 2));
 }
 
+// Función para generar número de documento (ejemplo: 467.829.293)
+function generarNumeroDocumento() {
+  const numero = Math.floor(Math.random() * 1_000_000_000); // entre 0 y 999,999,999
+  const strNum = numero.toString().padStart(9, '0'); // rellenar con ceros a la izquierda
+  return `${strNum.slice(0,3)}.${strNum.slice(3,6)}.${strNum.slice(6,9)}`;
+}
+
+// Función para formatear fecha a DD/MM/YYYY
+function formatearFecha(fecha) {
+  const d = fecha.getDate().toString().padStart(2, '0');
+  const m = (fecha.getMonth() + 1).toString().padStart(2, '0');
+  const y = fecha.getFullYear();
+  return `${d}/${m}/${y}`;
+}
+
 client.once(Events.ClientReady, () => {
   console.log(`Bot listo como ${client.user.tag}`);
 });
@@ -51,6 +78,11 @@ client.on(Events.InteractionCreate, async interaction => {
 
     const tienePrimeraCedula = !!db[userId]?.primeraCedula;
     const tieneSegundaCedula = !!db[userId]?.segundaCedula;
+
+    // Generar valores automáticos
+    const numeroDocumento = generarNumeroDocumento();
+    const fechaEmision = formatearFecha(new Date());
+    const fechaVencimiento = formatearFecha(new Date(new Date().setFullYear(new Date().getFullYear() + 5)));
 
     if (!tienePrimeraCedula) {
       if (!robloxInput) {
@@ -83,6 +115,9 @@ client.on(Events.InteractionCreate, async interaction => {
             nacionalidad,
             sexo,
             fecha_nacimiento,
+            numero_documento: numeroDocumento,
+            fecha_emision: fechaEmision,
+            fecha_vencimiento: fechaVencimiento,
             roblox: {
               Id: parseInt(robloxId),
               Username: robloxUsername
@@ -103,6 +138,7 @@ client.on(Events.InteractionCreate, async interaction => {
       return;
     }
 
+    // Segunda cédula solo con permiso
     if (!member.roles.cache.has(ROLE_ID_SECOND_DNI)) {
       await interaction.reply({ content: "No tienes permiso para crear una segunda cédula.", flags: 1 << 6 });
       return;
@@ -119,12 +155,15 @@ client.on(Events.InteractionCreate, async interaction => {
       nacionalidad,
       sexo,
       fecha_nacimiento,
+      numero_documento: generarNumeroDocumento(),
+      fecha_emision: formatearFecha(new Date()),
+      fecha_vencimiento: formatearFecha(new Date(new Date().setFullYear(new Date().getFullYear() + 5))),
       roblox: db[userId].primeraCedula.roblox
     };
 
     writeDB(db);
 
-    await interaction.reply({ content: "¡Tu Segunda Cédula ha sido creada con éxito! Usa `cl!dni` para verla.", flags: 1 << 6 });
+    await interaction.reply({ content: "¡Tu Segunda Cédula ha sido creada con éxito! Usa `cl!dni 2` para verla.", flags: 1 << 6 });
   }
 });
 
@@ -232,12 +271,16 @@ client.on("messageCreate", async message => {
       title: "🪪 Carnet de Identidad",
       thumbnail: robloxAvatarUrl ? { url: robloxAvatarUrl } : undefined,
       fields: [
+        { name: "🆔 N° Documento", value: dni.numero_documento || "Desconocido", inline: true },
         { name: "🧑 Nombre", value: dni.nombre, inline: true },
         { name: "👨‍👩‍👧 Apellido", value: dni.apellido, inline: true },
         { name: "🌍 Nacionalidad", value: `${bandera} ${dni.nacionalidad}`, inline: true },
         { name: "⚧️ Sexo", value: dni.sexo, inline: true },
+        { name: "🎮 Usuario Roblox", value: dni.roblox?.Username || "¡Inválido!", inline: true },
         { name: "🎂 Fecha de nacimiento", value: dni.fecha_nacimiento, inline: true },
-        { name: "🎮 Usuario Roblox", value: dni.roblox?.Username || "¡Inválido!", inline: true }
+        { name: "📅 Fecha de Emisión", value: dni.fecha_emision || "Desconocida", inline: true },
+        { name: "📅 Fecha de Vencimiento", value: dni.fecha_vencimiento || "Desconocida", inline: true }
+        
       ],
       footer: {
         text: `📝 Cédula de identidad de ${mentionedUser ? mentionedUser.username : message.author.username}`,
@@ -249,7 +292,7 @@ client.on("messageCreate", async message => {
     message.channel.send({ embeds: [embed] });
   }
 
-  // ✅ NUEVO comando de eliminación de cédulas (por número)
+  // Comando para eliminar cédulas
   if (content.toLowerCase().startsWith("cl!eliminar cedula")) {
     const args = content.split(/ +/).slice(2); // ["1", "@usuario"]
     const member = message.member;
@@ -305,4 +348,5 @@ client.on("messageCreate", async message => {
   }
 });
 
-client.login(config.token);
+// Login con token
+client.login(process.env.DISCORD_TOKEN);

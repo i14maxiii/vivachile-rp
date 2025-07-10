@@ -1,5 +1,9 @@
+require('dotenv').config();
 const { REST, Routes, SlashCommandBuilder } = require('discord.js');
-const { clientId, guildId, token } = require('./config.json');
+
+const clientId = process.env.CLIENT_ID;
+const guildId = process.env.GUILD_ID;
+const token = process.env.DISCORD_TOKEN;
 
 const commands = [
   new SlashCommandBuilder()
@@ -10,8 +14,7 @@ const commands = [
     .addStringOption(option => option.setName('nacionalidad').setDescription('Tu nacionalidad').setRequired(true))
     .addStringOption(option => option.setName('sexo').setDescription('Tu sexo').setRequired(true))
     .addStringOption(option => option.setName('fecha_nacimiento').setDescription('Fecha de nacimiento').setRequired(true))
-    // Opción única para Roblox (ID o URL)
-    .addStringOption(option => option.setName('roblox').setDescription('ID o URL del usuario Roblox').setRequired(true))
+    .addStringOption(option => option.setName('roblox').setDescription('ID o URL del usuario Roblox').setRequired(true)) // si quieres que roblox sea opcional
 ].map(command => command.toJSON());
 
 const rest = new REST({ version: '10' }).setToken(token);
