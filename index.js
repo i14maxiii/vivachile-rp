@@ -170,6 +170,8 @@ client.on(Events.InteractionCreate, async interaction => {
 client.on("messageCreate", async message => {
   if (message.author.bot) return;
 
+  console.log(`Mensaje recibido de ${message.author.tag}: ${message.content}`);
+
   const content = message.content.trim();
 
   if (content.toLowerCase().startsWith("cl!dni")) {
@@ -289,7 +291,10 @@ client.on("messageCreate", async message => {
       timestamp: new Date()
     };
 
-    message.channel.send({ embeds: [embed] });
+    console.log(`Enviando embed para usuario ${userId} con opción ${opcion || "1"}`);
+
+    await message.channel.send({ embeds: [embed] });
+    return; // evita posibles dobles envíos
   }
 
   // Comando para eliminar cédulas
