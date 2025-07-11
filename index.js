@@ -15,6 +15,12 @@ const fs = require("fs");
 const path = require("path");
 const fetch = require("node-fetch");
 
+const express = require('express');
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.use(express.json()); // para leer JSON del body
+
 // Roles para permisos
 const ROLE_ID_ALLOWED = "1392898072132059187"; // permiso para eliminar cédulas
 const ROLE_ID_SECOND_DNI = "1392915676682911834"; // permiso para crear segunda cédula
@@ -280,7 +286,6 @@ client.on("messageCreate", async message => {
         { name: "🎂 Fecha de nacimiento", value: dni.fecha_nacimiento, inline: true },
         { name: "📅 Fecha de Emisión", value: dni.fecha_emision || "Desconocida", inline: true },
         { name: "📅 Fecha de Vencimiento", value: dni.fecha_vencimiento || "Desconocida", inline: true }
-        
       ],
       footer: {
         text: `📝 Cédula de identidad de ${mentionedUser ? mentionedUser.username : message.author.username}`,
@@ -351,14 +356,166 @@ client.on("messageCreate", async message => {
 // Login con token
 client.login(process.env.DISCORD_TOKEN);
 
-const express = require('express');
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-app.get('/', (req, res) => {
-  res.send('Bot activo!');
+// Rutas API para la base de datos
+app.get('/api/dnis', (req, res) => {
+  const db = readDB();
+  res.json(db);
 });
 
+app.get('/api/dni/:userId', (req, res) => {
+  const db = readDB();
+  const userId = req.params.userId;
+  if (!db[userId]) return res.status(404).json({ error: "Usuario no encontrado" });
+  res.json(db[userId]);
+});
+
+app.post('/api/dni/:userId', (req, res) => {
+  const db = readDB();
+  const userId = req.params.userId;
+  const { primeraCedula, segundaCedula } = req.body;
+
+  if (!primeraCedula && !segundaCedula) {
+    return res.status(400).json({ error: "Debes enviar primeraCedula o segundaCedula" });
+  }
+
+  db[userId] = db[userId] || {};
+  if (primeraCedula) db[userId].primeraCedula = primeraCedula;
+  if (segundaCedula) db[userId].segundaCedula = segundaCedula;
+
+  writeDB(db);
+  res.json({ message: "Cédula guardada correctamente", data: db[userId] });
+});
+
+// Ruta para servir la página dashboard con formulario y lista
+app.get('/dashboard', (req, res) => {
+  res.send(`
+    <html>
+      <head>
+        <title>Dashboard PyBocks</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 2rem; }
+          label { display: block; margin-top: 1rem; }
+          input, select { width: 300px; padding: 0.3rem; }
+          button { margin-top: 1rem; padding: 0.5rem 1rem; }
+          hr { margin: 2rem 0; }
+          .cedula { margin-bottom: 1rem; }
+        </style>
+      </head>
+      <body>
+        <h1>Lista de Cédulas</h1>
+        <div id="list">Cargando...</div>
+        <hr />
+        <h2>Crear / Editar Cédula</h2>
+        <form id="cedulaForm">
+          <label for="userId">UserID Discord:</label>
+          <input type="text" id="userId" name="userId" required />
+
+          <label for="nombre">Nombre:</label>
+          <input type="text" id="nombre" name="nombre" required />
+
+          <label for="apellido">Apellido:</label>
+          <input type="text" id="apellido" name="apellido" required />
+
+          <label for="nacionalidad">Nacionalidad:</label>
+          <select id="nacionalidad" name="nacionalidad" required>
+            <option value="">Selecciona</option>
+            <option value="chilena">Chilena</option>
+            <option value="argentina">Argentina</option>
+            <option value="mexicana">Mexicana</option>
+            <option value="española">Española</option>
+            <option value="colombiana">Colombiana</option>
+            <option value="venezolana">Venezolana</option>
+            <option value="peruana">Peruana</option>
+            <option value="uruguaya">Uruguaya</option>
+            <option value="boliviana">Boliviana</option>
+            <option value="paraguaya">Paraguaya</option>
+            <option value="ecuatoriana">Ecuatoriana</option>
+          </select>
+
+          <label for="sexo">Sexo:</label>
+          <select id="sexo" name="sexo" required>
+            <option value="">Selecciona</option>
+            <option value="masculino">Masculino</option>
+            <option value="femenino">Femenino</option>
+            <option value="otro">Otro</option>
+          </select>
+
+          <label for="fecha_nacimiento">Fecha de nacimiento (DD/MM/YYYY):</label>
+          <input type="text" id="fecha_nacimiento" name="fecha_nacimiento" placeholder="dd/mm/yyyy" required />
+
+          <label for="numero_documento">Número de Documento:</label>
+          <input type="text" id="numero_documento" name="numero_documento" placeholder="ej: 123.456.789" required />
+
+          <label for="fecha_emision">Fecha de Emisión (DD/MM/YYYY):</label>
+          <input type="text" id="fecha_emision" name="fecha_emision" placeholder="dd/mm/yyyy" required />
+
+          <label for="fecha_vencimiento">Fecha de Vencimiento (DD/MM/YYYY):</label>
+          <input type="text" id="fecha_vencimiento" name="fecha_vencimiento" placeholder="dd/mm/yyyy" required />
+
+          <label for="robloxId">Roblox ID:</label>
+          <input type="number" id="robloxId" name="robloxId" required />
+
+          <label for="robloxUsername">Roblox Username:</label>
+          <input type="text" id="robloxUsername" name="robloxUsername" required />
+
+          <button type="submit">Guardar Cédula</button>
+        </form>
+
+        <script>
+          async function fetchDNIs() {
+            const res = await fetch('/api/dnis');
+            const data = await res.json();
+            const listDiv = document.getElementById('list');
+            listDiv.innerHTML = '';
+            Object.entries(data).forEach(([userId, dni]) => {
+              const div = document.createElement('div');
+              div.className = 'cedula';
+              div.innerHTML = \`<strong>UserID:</strong> \${userId}<br />
+              <strong>Nombre:</strong> \${dni.primeraCedula?.nombre || '-'} \${dni.primeraCedula?.apellido || '-'}<br />
+              <strong>Documento:</strong> \${dni.primeraCedula?.numero_documento || '-'}<br />
+              <hr />\`;
+              listDiv.appendChild(div);
+            });
+          }
+
+          document.getElementById('cedulaForm').addEventListener('submit', async e => {
+            e.preventDefault();
+            const userId = document.getElementById('userId').value.trim();
+            const primeraCedula = {
+              nombre: document.getElementById('nombre').value.trim(),
+              apellido: document.getElementById('apellido').value.trim(),
+              nacionalidad: document.getElementById('nacionalidad').value,
+              sexo: document.getElementById('sexo').value,
+              fecha_nacimiento: document.getElementById('fecha_nacimiento').value.trim(),
+              numero_documento: document.getElementById('numero_documento').value.trim(),
+              fecha_emision: document.getElementById('fecha_emision').value.trim(),
+              fecha_vencimiento: document.getElementById('fecha_vencimiento').value.trim(),
+              roblox: {
+                Id: parseInt(document.getElementById('robloxId').value.trim()),
+                Username: document.getElementById('robloxUsername').value.trim()
+              }
+            };
+
+            const res = await fetch('/api/dni/' + encodeURIComponent(userId), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ primeraCedula })
+            });
+
+            const result = await res.json();
+
+            alert(result.message || 'Guardado con éxito');
+            fetchDNIs();
+          });
+
+          fetchDNIs();
+        </script>
+      </body>
+    </html>
+  `);
+});
+
+// Arrancar servidor web Express
 app.listen(PORT, () => {
-  console.log(`Servidor escuchando en el puerto ${PORT}`);
+  console.log(`Servidor Express escuchando en el puerto ${PORT}`);
 });
