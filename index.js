@@ -1,15 +1,5 @@
 require('dotenv').config(); // carga las variables de .env automáticamente
 
-const token = process.env.DISCORD_TOKEN;
-const clientId = process.env.CLIENT_ID;
-const guildId = process.env.GUILD_ID;
-
-console.log("Token:", token ? "Cargado" : "No definido");
-console.log("Client ID:", clientId ? "Cargado" : "No definido");
-console.log("Guild ID:", guildId ? "Cargado" : "No definido");
-
-// Aquí sigue tu código usando esas variables
-
 const { Client, GatewayIntentBits, Events } = require("discord.js");
 const fs = require("fs");
 const path = require("path");
@@ -170,8 +160,7 @@ client.on(Events.InteractionCreate, async interaction => {
 client.on("messageCreate", async message => {
   if (message.author.bot) return;
 
-  console.log(`Mensaje recibido de ${message.author.tag}: ${message.content}`);
-
+  // Solo procesar mensajes que empiecen con cl!dni o cl!eliminar cedula
   const content = message.content.trim();
 
   if (content.toLowerCase().startsWith("cl!dni")) {
@@ -282,7 +271,6 @@ client.on("messageCreate", async message => {
         { name: "🎂 Fecha de nacimiento", value: dni.fecha_nacimiento, inline: true },
         { name: "📅 Fecha de Emisión", value: dni.fecha_emision || "Desconocida", inline: true },
         { name: "📅 Fecha de Vencimiento", value: dni.fecha_vencimiento || "Desconocida", inline: true }
-        
       ],
       footer: {
         text: `📝 Cédula de identidad de ${mentionedUser ? mentionedUser.username : message.author.username}`,
@@ -294,7 +282,7 @@ client.on("messageCreate", async message => {
     console.log(`Enviando embed para usuario ${userId} con opción ${opcion || "1"}`);
 
     await message.channel.send({ embeds: [embed] });
-    return; // evita posibles dobles envíos
+    return; // importante para evitar que siga ejecutando el código y evitar dobles respuestas
   }
 
   // Comando para eliminar cédulas
@@ -356,6 +344,7 @@ client.on("messageCreate", async message => {
 // Login con token
 client.login(process.env.DISCORD_TOKEN);
 
+// Servidor web para mantener activo (útil en hosting como Replit o Heroku)
 const express = require('express');
 const app = express();
 const PORT = process.env.PORT || 3000;
