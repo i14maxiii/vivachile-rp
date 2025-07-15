@@ -12,19 +12,32 @@
   },
   "1287785543689834619": {
     "primeraCedula": {
-      "nombre": "Valente Ignacio",
-      "apellido": "Saldivia Peréz",
+      "nombre": "Maximiliano Ignacio",
+      "apellido": "Saldivia Diaz",
       "nacionalidad": "Chilena",
       "sexo": "Masculino",
       "fecha_nacimiento": "02/02/2003",
-      "numero_documento": "044.631.295",
-      "fecha_emision": "10/07/2025",
-      "fecha_vencimiento": "10/07/2030",
+      "numero_documento": "554.616.911",
+      "fecha_emision": "12/07/2025",
+      "fecha_vencimiento": "12/07/2030",
       "roblox": {
         "Id": 1562009777,
         "Username": "i14_maxiii"
       }
     },
-    "segundaCedula": null
+    "segundaCedula": {
+      "nombre": "Valente Lautaro",
+      "apellido": "Peréz Suaréz",
+      "nacionalidad": "Argentina",
+      "sexo": "Masculino",
+      "fecha_nacimiento": "03/05/1999",
+      "numero_documento": "517.657.016",
+      "fecha_emision": "12/07/2025",
+      "fecha_vencimiento": "12/07/2030",
+      "roblox": {
+        "Id": 1562009777,
+        "Username": "i14_maxiii"
+      }
+    }
   }
 }
